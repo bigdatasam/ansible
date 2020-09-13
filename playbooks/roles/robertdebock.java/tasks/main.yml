@@ -1,0 +1,98 @@
+---
+# tasks file for java
+- name: include assert.yml
+  include_tasks: assert.yml
+
+- name: install requirements
+  package:
+    name: bash
+    state: present
+
+- name: install openjdk java (package)
+  package:
+    name: "{{ java_openjdk_package }}"
+    state: present
+  when:
+    java_vendor == "openjdk"
+  environment:
+    USE: "X -cups -alsa -fontconfig"
+
+- name: copy oracle java (rpm)
+  copy:
+    src: "{{ java_package }}"
+    dest: "/tmp/{{ java_oracle_package }}"
+    mode: "0640"
+  when:
+    - java_rpm_source == "local"
+    - java_format == "rpm"
+
+- name: install oracle java (rpm) (local)
+  package:
+    name: "/tmp/{{ java_oracle_package }}"
+    state: present
+  when:
+    - java_rpm_source == "local"
+    - java_format == "rpm"
+
+- name: install oracle java (rpm) (repository)
+  package:
+    name: "{{ java_oracle_package }}"
+    state: present
+  when:
+    - java_rpm_source == "repository"
+    - java_format == "rpm"
+
+- name: ensure java_install_directory exists
+  file:
+    path: "{{ java_install_directory }}"
+    state: directory
+    mode: "0755"
+  when:
+    - java_vendor == "oracle"
+    - java_format == "targz"
+
+- name: install oracle java (targz)
+  unarchive:
+    src: "{{ java_oracle_package }}"
+    dest: "{{ java_install_directory }}"
+    mode: "0755"
+  when:
+    - java_format == "targz"
+    - java_vendor == "oracle"
+
+- name: install oracle java policy software (targz)
+  unarchive:
+    src: jce_policy-8.zip
+    dest: "{{ java_install_directory }}"
+    mode: "0755"
+  when:
+    - java_jce | bool
+    - java_version is defined
+    - java_version == 8
+    - java_vendor == "oracle"
+
+- name: set alternative (targz)
+  alternatives:
+    name: java
+    link: /usr/bin/java
+    path: "{{ java_install_directory }}/{{ java_oracle_directory }}/bin/java"
+  when:
+    - java_format == "targz"
+    - ansible_distribution != "Alpine"
+    - java_vendor == "oracle"
+
+- name: find JAVA_HOME
+  shell: set -o pipefail ; readlink -f /usr/bin/java | sed 's%/bin/java%%'
+  args:
+    executable: /bin/bash
+  changed_when: no
+  check_mode: no
+  register: java_home
+
+- name: set JAVA_HOME in /etc/environment
+  lineinfile:
+    path: /etc/profile.d/java_home.sh
+    regexp: '^export JAVA_HOME='
+    line: 'export JAVA_HOME="{{ java_home.stdout }}"'
+    create: yes
+    mode: "0644"
