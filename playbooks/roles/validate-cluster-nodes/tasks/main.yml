@@ -16,20 +16,21 @@
     msg: " OS Family: {{ ansible_os_family|lower }} and OS Version is:  {{ ansible_distribution_major_version }}"
 
 - name: Check the OS Version
-  shell: cat /etc/redhat-release
+  shell: cat /etc/*release
   register: os
 
 - debug: var=os.stdout_lines
 
 #Check this
-- name: Check the rhn_register status on the Server
-  shell: yum repolist | grep rhn_register | grep Error
-  register: rhn_register
+#- name: Check the rhn_register status on the Server
+#  shell: yum repolist | grep rhn_register | grep Error
+#  register: rhn_register
 
-- debug: var=rhn_register.stdout_lines
+#- debug: var=rhn_register.stdout_lines
 
 - name: Check for list of SUDO Permissions
-  shell: dzdo -l | grep "("
+  #shell: sudo -l | grep "("
+  shell: sudo -l
   register: sudo_l
 
 - debug: var=sudo_l.stdout_lines
@@ -66,53 +67,48 @@
 
 - debug: var=dns2.stdout_lines
 
-- name: Centrify Agent status
-  shell: ps -ef | grep centrify | grep -v grep
-  register: centrifydc
+#- name: Centrify Agent status
+#  shell: ps -ef | grep centrify | grep -v grep
+#  register: centrifydc
 
-- debug: var=centrifydc.stdout_lines
+# debug: var=centrifydc.stdout_lines
 
-- name: Validate Centrify adquery
-  shell: adquery user p2709241; adquery user '{{ ssh_user }}'
-  register: adquery
+# name: Validate Centrify adquery
+#  shell: adquery user p2709241; adquery user '{{ ssh_user }}'
+#  register: adquery
 
-- debug: var=adquery.stdout_lines
+#- debug: var=adquery.stdout_lines
 
-- name: Validate adinfo - If you see a http/fqdn@REALM entry, have the Domain Services team delete those entries
-  shell: adinfo -C | grep http
-  register: adinfo
+#- name: Validate adinfo - If you see a http/fqdn@REALM entry, have the Domain Services team delete those entries
+#  shell: adinfo -C | grep http
+#  register: adinfo
 
-- debug: var=adinfo.stdout_lines
+#- debug: var=adinfo.stdout_lines
 
 - name: Check linux block device configuration - all data mounts should be noatime
   shell: cat /etc/fstab | grep noatime
   register: fstab
-
 - debug: var=fstab.stdout_lines
 
 
 - name: Check Memory
   shell: cat /proc/meminfo | grep MemTotal | awk '{print $2/1024/1024,"GB"}'
   register: meminfo
-
 - debug: var=meminfo.stdout_lines
 
 - name: Check Cores Count
   shell: echo "Core Count - `/usr/sbin/dmidecode -t processor | grep "Core Count" | awk -F':' '{ sum += $2 } END { print sum}'`"
   register: corecount
-
 - debug: var=corecount.stdout_lines
 
 - name: Check Thread Count
   shell: echo "Thread Count - `/usr/sbin/dmidecode -t processor | grep "Thread Count" | awk -F':' '{ sum += $2 } END { print sum}'`"
   register: threadcount
-
 - debug: var=threadcount.stdout_lines
 
 - name: Network Interface configuration
   shell: ls /etc/sysconfig/network-scripts/ | grep bond | grep ifcfg | awk -F- '{print $2}'
   register: network_scripts
-
 - debug: var=network_scripts.stdout_lines
 
 #use variables from - register: network-scripts
@@ -128,53 +124,63 @@
 - name: Network Interface configuration
   shell: grep IPADDR /etc/sysconfig/network-scripts/ifcfg-*
   register: ifcfg
-
 - debug: var=ifcfg.stdout_lines
 
 - name: Check Remote Repos
   shell: grep -i enabled /etc/yum.repos.d/*.repo |sort -u
   register: remoterepos
-
 - debug: var=remoterepos.stdout_lines
 
 - name: Check Swappiness
-  shell: /usr/sbin/sysctl -a | grep swappiness
+  shell: /usr/sbin/sysctl -a | grep -e swappiness
   register: swappiness
-
 - debug: var=swappiness.stdout_lines
 
 - name: Check ntp
-  shell: systemctl status {{ ntp_service_name }} | grep running
+  shell: service {{ ntp_service_name }} status | grep running
   register: ntp
-
 - debug: var=ntp.stdout_lines
 
 - name: Check Firewalls
-  shell: systemctl status {{ firewall_service_name }} | grep running
+  shell: service {{ firewall_service_name }} status| grep running
   register: firewalls
 
 - debug: var=firewalls.stdout_lines
 
-- name: Check SELinux
-  shell: /usr/sbin/getenforce
-  register: getenforce
+- name: check java version
+  shell: java --version
+  register: java_version
 
-- debug: var=getenforce.stdout_lines
+- debug: var=java_version.stdout_lines
+
+#- name: Check SELinux
+#  shell: /usr/sbin/getenforce
+#  register: getenforce
+
+#- debug: var=getenforce.stdout_lines
 
 - name: Check IPv6 - stdout should be empty
   shell: ifconfig -a | grep inet6
   register: ipv6
-
 - debug: var=ipv6.stdout_lines
 
 - name: Check thp
   shell: cat /sys/kernel/mm/transparent_hugepage/defrag; cat /sys/kernel/mm/transparent_hugepage/enabled
   register: thp
-
 - debug: var=thp.stdout_lines
 
-- name: Check wmem and rmem
-  shell: ifconfig -a | grep "wmem|rmem"
-  register: mem
+#- name: Check wmem and rmem
+#  shell: ifconfig -a | grep "wmem|rmem"
+#  register: mem
+#- debug: var=mem.stdout_lines
 
-- debug: var=mem.stdout_lines
+- name: check wmem
+  shell: cat /proc/sys/net/core/wmem_max
+  register: wmem
+- debug: var=wmem.stdout_lines
+
+- name: check rmem
+  shell: cat /proc/sys/net/core/rmem_max
+  register: rmem
+- debug: var=rmem.stdout_lines
+

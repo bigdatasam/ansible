@@ -1,0 +1,3 @@
+#global variables
+ntp_service_name: ntpd
+firewall_service_name: iptables
