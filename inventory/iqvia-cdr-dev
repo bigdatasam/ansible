@@ -4,7 +4,6 @@
 [cloudera-agent-nodes]
 
 [worker-nodes]
-fqdn ansible_host=<IP> node_fqdn=<fqdn>
 
 [edge-nodes]
 
@@ -19,10 +18,16 @@ fqdn ansible_host=<IP> node_fqdn=<fqdn>
 [kms-kts-nodes]
 
 [ambari-node]
-kstleacbd00161.labhadoop.charter.com ansible_host=22.85.226.60 node_fqdn=kstleacbd00161.labhadoop.charter.com
 
 [worker-nodes]
-kstleacbd00162.labhadoop.charter.com ansible_host=22.85.226.61 node_fqdn=kstleacbd00162.labhadoop.charter.com
 
+[webservers]
+app1 ansible_host=3.233.133.10
+app2 ansible_host=34.227.138.208
 
+[loadbalancers]
+lb1 ansible_host=54.197.174.22
+
+[local]
+control ansible_connection=local
 
